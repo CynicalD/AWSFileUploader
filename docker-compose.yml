@@ -1,0 +1,15 @@
+services:
+  db:
+    container_name: aws-project-db
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: rayandev
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: file_uploader_db
+    ports:
+      - "5433:5432
+    volumes:
+      - aws_file_uploader_pg_data:/var/lib/postgresql/data
+
+volumes:
+  aws_file_uploader_pg_data:
