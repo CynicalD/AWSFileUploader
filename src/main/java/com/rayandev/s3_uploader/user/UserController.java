@@ -3,7 +3,6 @@ package com.rayandev.s3_uploader.user;
 import com.rayandev.s3_uploader.s3.S3Buckets;
 import com.rayandev.s3_uploader.s3.S3Service;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,7 +11,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/users")
-@CrossOrigin(origins = "*") // Crucial for your React frontend to connect
+@CrossOrigin(origins = "*")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -28,44 +27,44 @@ public class UserController {
     @PostMapping("/auth")
     public User authenticate(@RequestParam("username") String username,
                              @RequestParam("password") String password) {
-        // Find user by username
-        User user = userRepository.findByUsername(username)
-                .orElse(null);
+        User user = userRepository.findByUsername(username).orElse(null);
 
-        // If a user exists, check the password
         if (user != null) {
             if (user.getPassword().equals(password)) {
-                return user; // Login successful
+                return user;
             } else {
-                throw new RuntimeException("Invalid password"); // Login failed
+                throw new RuntimeException("Invalid password");
             }
         }
 
-        // If user doesn't exist, create a new one
-        User newUser = new User();
-        newUser.setUsername(username);
-        newUser.setPassword(password);
+        User newUser = new User(username, password);
         return userRepository.save(newUser);
     }
 
-    @PostMapping(value = "{userId}/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public void uploadProfileImage(@PathVariable Integer userId,
-                                   @RequestParam("file") MultipartFile file) throws IOException {
+    // --- NEW: Upload a file and add it to the user's list ---
+    @PostMapping(value = "{userId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public User uploadFile(@PathVariable Integer userId,
+                           @RequestParam("file") MultipartFile file) throws IOException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String key = "profile-images/" + UUID.randomUUID();
-        s3Service.putObject(s3Buckets.getBucket(), key, file.getBytes());
+        // 1. Generate a clean UUID for the S3 Key
+        String s3Key = UUID.randomUUID().toString();
 
-        user.setProfileImageKey(key);
-        userRepository.save(user);
+        // 2. Put it in a "user-files" folder in your bucket
+        s3Service.putObject(s3Buckets.getBucket(), "user-files/" + s3Key, file.getBytes());
+
+        // 3. Create the database record and attach it to the user
+        UserFile userFile = new UserFile(file.getOriginalFilename(), s3Key, user);
+        user.getFiles().add(userFile);
+
+        // 4. Returning the saved user automatically sends the updated list of files to React!
+        return userRepository.save(user);
     }
 
-    @GetMapping(value = "{userId}/profile-image", produces = MediaType.IMAGE_JPEG_VALUE)
-    public byte[] getProfileImage(@PathVariable("userId") Integer userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        return s3Service.getObject(s3Buckets.getBucket(), user.getProfileImageKey());
+    // --- NEW: Get any file directly by its S3 Key ---
+    @GetMapping(value = "files/{s3Key}", produces = MediaType.IMAGE_JPEG_VALUE)
+    public byte[] getFile(@PathVariable("s3Key") String s3Key) {
+        return s3Service.getObject(s3Buckets.getBucket(), "user-files/" + s3Key);
     }
 }

@@ -2,6 +2,9 @@ package com.rayandev.s3_uploader.user;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class User {
@@ -28,9 +31,7 @@ public class User {
     }
 
 
-    public Integer getId() {
-        return id;
-    }
+    public Integer getId() {return id;}
 
     public String getUsername() {
         return username;
@@ -84,15 +85,9 @@ public class User {
         this.id = id;
     }
 
-    private String profileImageKey;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<UserFile> files = new ArrayList<>();
 
-    // Add these back to your getters/setters
-    public String getProfileImageKey() {
-        return profileImageKey;
-    }
-
-    public void setProfileImageKey(String profileImageKey) {
-        this.profileImageKey = profileImageKey;
-    }
-
+    public List<UserFile> getFiles() { return files; }
+    public void setFiles(List<UserFile> files) { this.files = files; }
 }
