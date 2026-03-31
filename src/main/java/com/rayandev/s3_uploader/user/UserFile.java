@@ -17,7 +17,7 @@ public class UserFile {
     // this makes is many to one
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore // Crucial: This stops Spring Boot from crashing in an infinite loop when sending data to React
+    @JsonIgnore // FIXXXXXX: This stops Spring Boot from crashing in an infinite loop when sending data to React
     private User user;
 
     public UserFile() {}

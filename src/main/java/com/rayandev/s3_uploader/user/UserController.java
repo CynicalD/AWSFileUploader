@@ -41,7 +41,6 @@ public class UserController {
         return userRepository.save(newUser);
     }
 
-    // --- NEW: Upload a file and add it to the user's list ---
     @PostMapping(value = "{userId}/files", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public User uploadFile(@PathVariable Integer userId,
                            @RequestParam("file") MultipartFile file) throws IOException {
@@ -58,7 +57,7 @@ public class UserController {
         UserFile userFile = new UserFile(file.getOriginalFilename(), s3Key, user);
         user.getFiles().add(userFile);
 
-        // 4. Returning the saved user automatically sends the updated list of files to React!
+        // 4. Returning the saved user automatically sends the updated list of files to React
         return userRepository.save(user);
     }
 
